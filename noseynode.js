@@ -15,7 +15,8 @@ function createRecord(addr, url){
   var databaseUrl = "mongodb://localhost:27017/noseynode";
   var collections = ["nnc"];
   var db = require("mongojs").connect(databaseUrl, collections, function(err,db){
-    if (err) console.log("error");});
+    if (err) console.log("error");
+  });
 
 /* Setup Proxy */
   httpProxy = require('http-proxy');
