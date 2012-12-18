@@ -1,90 +1,47 @@
 require 'date-utils'
 
-# function createRecord(addr, url){ 
-#  var record = {
-#    "remote_address": addr,
-#    "url": url,
-#	"dtg": Date.today()
-#  }
-#  //console.log(record);
-#  return record;
-#
-
 createRecord = (addr, url) ->
-   "remote_addr": addr, "url": url
+  console.log "In createRecord"
+  {"remote_addr": addr, "url": url, "dtg": Date.today()}
 
-#function getData(){
-#  console.log("in");
-#  db.nnc.find(function (err, nnc) {
-#    if (err || !nnc) console.log("Nothing found");
-#	else nnc.forEach (function (data){
-#	  console.log(data);
-#	});
-#  });
-#}
-
-getData ->
+getData = ->
   console.log "Inside getData"
-  db.nnc.find = (err, nnc) ->
-    if err or !nnc
+  db.newcollection.find (err, newcollection) ->
+    if err or !newcollection
       console.log "Nothing found"
-    else
 
-var PROXY_PORT  = 8888;
-var MONGO_SERVER = "192.168.1.2";
-var httpProxy; 
-var server;
+PROXY_PORT = 8888
+MONGO_SERVER_IP = "192.168.1.2"
 
-/* Setup MongoDB */
-var databaseUrl = "mongodb://" + MONGO_SERVER + ":27017/noseynode2";
-var collections = ["nnc"];
-var db = require("mongojs").connect(databaseUrl, collections, function(err,db){
-  if (err) console.log("error");
-});
+mongojs = require 'mongojs'
 
-/* Setup Proxy */
-httpProxy = require('http-proxy');
-server = httpProxy.createServer(function(req, res, proxy) {
-  var query;
+db = mongojs "192.168.1.2:27017/noseynode2", ["newcollection"], (err,db) ->
+  if err
+    console.log "error connecting" 
+  else console.log "here"
+
+httpProxy = require 'http-proxy' # npm install http-proxy
+
+server = httpProxy.createServer (req, res, proxy) ->
   
-  console.log(req.headers);
-  
-  var str = req.headers['host'];
-
-  var newstr = str.replace(/http$/gi, "");
-  
-  console.log(newstr);
- 
-  if (req.headers['host'] != null) {
-    db.nnc.save(createRecord(req.connection.remoteAddress, req.url), function(err, saved) {
-	  if (err || !saved) console.log("not saved" + " " + err);
-	}); // Create and save record 
-      
-    proxy.proxyRequest(req, res, {    // Make proxy request after saving record
-      host: req.headers['host'], // Fix until I know why it was appending http at the end
+  if req.headers['host']?
+    db.newcollection.save createRecord(req.connection.remoteAddress, req.url), (err, saved) ->
+      if (err || !saved)
+          console.log "not saved because err:#{err}"
+    
+    proxy.proxyRequest req, res,
+      host: req.headers['host']
       port: 80
-    });
+  else
+    res.end()
 
-  } else { res.end(); } 
-  
-});
+server.listen PROXY_PORT, ->
+  console.log "Http Proxy listening on port #{PROXY_PORT}"
 
-/* Setup and start admin-gui server */
-var http = require('http');
-http.createServer(function (req,res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.write('Worked\n');
-  
-  // Fetch data from MongoDB
-  console.log(getData());
-  res.end();
-  
- 
- 
-}).listen(9999, '127.0.0.1'); // Start listening for connections
+http = require 'http'
+gui_server = http.createServer (req,res) ->
+  res.writeHead 200, {'Content-Type': 'text/plain'}
+  res.write 'Worked\n'
+  res.end()
 
-
-/* Start Proxy */
-server.listen(PROXY_PORT, function() {
-  console.log("HTTP Proxy listening on port " + PROXY_PORT);
-});
+gui_server.listen 9999, '0.0.0.0'
